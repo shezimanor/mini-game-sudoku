@@ -12,6 +12,10 @@
   --accent: #22d3ee;
   --accent-dim: #0e7490;
   --danger: #f43f5e;
+  /* §9.10 筆記 */
+  --note: #fbbf24;
+  --note-disabled: #57534e;
+  --note-text: #a8a29e;
   --overlay: rgb(15 23 42 / 72%);
 
   /* §9.2 字體 */

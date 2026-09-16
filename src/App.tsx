@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DIFFICULTY_LABEL } from './sudoku/logic'
 import type { Difficulty } from './sudoku/logic'
+import { peerIndices, usedDigits } from './sudoku/peers'
 import { requestPuzzle } from './sudoku/requestPuzzle'
 import type { PuzzleRequest } from './sudoku/requestPuzzle'
 import { formatTime, useTimer } from './hooks/useTimer'
@@ -11,6 +12,7 @@ import { Hud } from './components/Hud'
 import { Modal } from './components/Modal'
 import type { ModalAction } from './components/Modal'
 import { NumberPad } from './components/NumberPad'
+import type { PadMode } from './components/NumberPad'
 import { Skeleton } from './components/Skeleton'
 
 /** §4.3 狀態模型 */
@@ -25,6 +27,15 @@ type Status =
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
 
+/** 被開啟的數字面板：目標空格、錨點座標、面板種類 */
+interface Pad {
+  index: number
+  rect: DOMRect
+  mode: PadMode
+}
+
+const emptyNotes = () => Array.from({ length: 81 }, () => new Set<number>())
+
 export default function App() {
   const [status, setStatus] = useState<Status>('idle')
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
@@ -32,8 +43,8 @@ export default function App() {
   const [solution, setSolution] = useState<number[]>([])
   const [board, setBoard] = useState<number[]>([])
   const [mistakes, setMistakes] = useState(0)
-  const [selected, setSelected] = useState<number | null>(null)
-  const [anchor, setAnchor] = useState<DOMRect | null>(null)
+  const [pad, setPad] = useState<Pad | null>(null)
+  const [notes, setNotes] = useState<Set<number>[]>(emptyNotes)
   const [error, setError] = useState<ErrorMark | null>(null)
 
   const { elapsed, reset: resetTimer } = useTimer(status === 'playing')
@@ -49,16 +60,14 @@ export default function App() {
     timersRef.current = []
   }, [])
 
-  const closePad = useCallback(() => {
-    setSelected(null)
-    setAnchor(null)
-  }, [])
+  const closePad = useCallback(() => setPad(null), [])
 
   /** 清掉一局的暫時狀態，但不動題目本身 */
   const resetRound = useCallback(() => {
     clearTimers()
     closePad()
     setError(null)
+    setNotes(emptyNotes())
     mistakesRef.current = 0
     setMistakes(0)
     resetTimer()
@@ -109,11 +118,32 @@ export default function App() {
     setStatus('idle')
   }, [resetRound])
 
+  /** FR-21.10：切換一個筆記，面板保持開啟 */
+  const toggleNote = useCallback((index: number, digit: number) => {
+    setNotes((current) => {
+      const next = current.slice()
+      const cell = new Set(next[index])
+      if (cell.has(digit)) cell.delete(digit)
+      else cell.add(digit)
+      next[index] = cell
+      return next
+    })
+  }, [])
+
+  /** FR-21.19：清空該格所有筆記 */
+  const clearNotes = useCallback((index: number) => {
+    setNotes((current) => {
+      const next = current.slice()
+      next[index] = new Set()
+      return next
+    })
+  }, [])
+
   const fill = useCallback(
     (digit: number) => {
-      if (status !== 'playing' || selected === null || error) return
+      if (status !== 'playing' || !pad || error) return
 
-      const index = selected
+      const index = pad.index
       closePad()
 
       // FR-8.1：以正解為基準判定，而非只檢查是否違反數獨規則
@@ -121,6 +151,20 @@ export default function App() {
         const next = board.slice()
         next[index] = digit
         setBoard(next)
+
+        // FR-21.15：確定答案後清掉該格的筆記，並移除關聯格中相同的筆記
+        setNotes((current) => {
+          const updated = current.slice()
+          updated[index] = new Set()
+          for (const peer of peerIndices(index)) {
+            if (!updated[peer].has(digit)) continue
+            const cell = new Set(updated[peer])
+            cell.delete(digit)
+            updated[peer] = cell
+          }
+          return updated
+        })
+
         if (next.every((value) => value !== 0)) setStatus('completed')
         return
       }
@@ -142,12 +186,27 @@ export default function App() {
         }, ERROR_TOTAL_MS),
       )
     },
-    [board, closePad, error, selected, solution, status],
+    [board, closePad, error, pad, solution, status],
+  )
+
+  /** 依面板種類決定點擊數字的效果 */
+  const handlePick = useCallback(
+    (digit: number) => {
+      if (!pad) return
+      if (pad.mode === 'answer') {
+        fill(digit)
+        return
+      }
+      // FR-21.11：被關聯格排除的數字按下去無作用
+      if (usedDigits(board, pad.index).has(digit)) return
+      toggleNote(pad.index, digit)
+    },
+    [board, fill, pad, toggleNote],
   )
 
   /** FR-7.4.2：點擊目標空格與面板以外的地方就關閉面板 */
   useEffect(() => {
-    if (selected === null) return
+    if (!pad) return
 
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement
@@ -159,28 +218,54 @@ export default function App() {
 
     document.addEventListener('mousedown', onPointerDown)
     return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [closePad, selected])
+  }, [closePad, pad])
 
-  /** FR-7.5：面板開啟時才接受鍵盤 1–9 */
+  /** FR-7.5、FR-21.21 ~ FR-21.25：面板開啟時才接受鍵盤操作 */
   useEffect(() => {
-    if (selected === null || status !== 'playing') return
+    if (!pad || status !== 'playing') return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key < '1' || event.key > '9') return
-      event.preventDefault()
-      fill(Number(event.key))
+      const { key } = event
+
+      if (key >= '1' && key <= '9') {
+        event.preventDefault()
+        handlePick(Number(key))
+        return
+      }
+
+      // N：在答案面板與筆記面板之間切換，目標空格不變
+      if (key === 'n' || key === 'N') {
+        event.preventDefault()
+        setPad((current) =>
+          current
+            ? { ...current, mode: current.mode === 'answer' ? 'note' : 'answer' }
+            : null,
+        )
+        return
+      }
+
+      if (pad.mode === 'note' && (key === 'Backspace' || key === 'Delete')) {
+        event.preventDefault()
+        clearNotes(pad.index)
+        return
+      }
+
+      if (key === 'Escape') {
+        event.preventDefault()
+        closePad()
+      }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [fill, selected, status])
+  }, [clearNotes, closePad, handlePick, pad, status])
 
   /** 視窗尺寸改變後原本的錨點就失效了，直接關閉面板 */
   useEffect(() => {
-    if (selected === null) return
+    if (!pad) return
     window.addEventListener('resize', closePad)
     return () => window.removeEventListener('resize', closePad)
-  }, [closePad, selected])
+  }, [closePad, pad])
 
   const modal = buildModal()
 
@@ -205,19 +290,31 @@ export default function App() {
           <Board
             puzzle={puzzle}
             board={board}
-            selected={selected}
+            notes={notes}
+            selected={pad?.index ?? null}
             error={error}
             interactive={status === 'playing'}
             onSelect={(index, element) => {
-              setSelected(index)
-              setAnchor(element.getBoundingClientRect())
+              // FR-7.4a：開啟答案面板時，原本的筆記面板一併被取代
+              setPad({ index, rect: element.getBoundingClientRect(), mode: 'answer' })
+            }}
+            onNoteRequest={(index, element) => {
+              setPad({ index, rect: element.getBoundingClientRect(), mode: 'note' })
             }}
           />
         </main>
       )}
 
-      {selected !== null && anchor && status === 'playing' && (
-        <NumberPad ref={padRef} anchor={anchor} onPick={fill} />
+      {pad && status === 'playing' && (
+        <NumberPad
+          ref={padRef}
+          anchor={pad.rect}
+          mode={pad.mode}
+          notes={notes[pad.index]}
+          disabled={usedDigits(board, pad.index)}
+          onPick={handlePick}
+          onClear={() => clearNotes(pad.index)}
+        />
       )}
 
       {modal}

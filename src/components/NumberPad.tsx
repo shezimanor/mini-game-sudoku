@@ -1,71 +1,117 @@
-/** 數字面板：3×3 的 1–9 按鈕，依邊緣判斷擺放（FR-7.2、FR-7.3、§9.5） */
+/**
+ * 數字面板：答案面板與筆記面板共用同一個元件。
+ * 對應 FR-7.2、FR-7.3、§7.9、§9.5、§9.10。
+ */
 
 import { forwardRef } from 'react'
 import './NumberPad.css'
 
-/** 面板為正方形：3 × 44px 按鈕 + 2 × 8px 間距 + 2 × 4px 內距 = 156px（FR-18.4） */
-export const PAD_SIZE = 156
+export type PadMode = 'answer' | 'note'
+
+/** 3 × 44px 按鈕 + 2 × 8px 間距 + 2 × 4px 內距（FR-18.4） */
+const PAD_WIDTH = 156
+const CLEAR_HEIGHT = 44
 const GAP = 8
+/** 筆記面板多一列 clear 按鈕（FR-22.6） */
+const padHeight = (mode: PadMode) =>
+  mode === 'note' ? PAD_WIDTH + GAP + CLEAR_HEIGHT : PAD_WIDTH
+
+const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 interface Props {
   /** 被選取空格的視窗座標 */
   anchor: DOMRect
+  mode: PadMode
+  /** 筆記模式：該格目前已記下的數字 */
+  notes: Set<number>
+  /** 筆記模式：關聯格已排除、不可點擊的數字（FR-21.6） */
+  disabled: Set<number>
   onPick: (digit: number) => void
+  onClear: () => void
 }
 
 /**
  * 依序嘗試下、上、右、左四個方位，取第一個完整落在可視範圍內的位置。
  * 四個方位都放不下時，退回下方並夾在視窗內（FR-7.3）。
  */
-function place(anchor: DOMRect) {
+function place(anchor: DOMRect, height: number) {
   const { innerWidth: vw, innerHeight: vh } = window
-  const clampX = (x: number) => Math.min(Math.max(GAP, x), vw - PAD_SIZE - GAP)
-  const clampY = (y: number) => Math.min(Math.max(GAP, y), vh - PAD_SIZE - GAP)
-  const centerX = clampX(anchor.left + anchor.width / 2 - PAD_SIZE / 2)
-  const centerY = clampY(anchor.top + anchor.height / 2 - PAD_SIZE / 2)
+  const clampX = (x: number) => Math.min(Math.max(GAP, x), vw - PAD_WIDTH - GAP)
+  const clampY = (y: number) => Math.min(Math.max(GAP, y), vh - height - GAP)
+  const centerX = clampX(anchor.left + anchor.width / 2 - PAD_WIDTH / 2)
+  const centerY = clampY(anchor.top + anchor.height / 2 - height / 2)
 
   const candidates = [
     { top: anchor.bottom + GAP, left: centerX, from: 'below' },
-    { top: anchor.top - PAD_SIZE - GAP, left: centerX, from: 'above' },
+    { top: anchor.top - height - GAP, left: centerX, from: 'above' },
     { top: centerY, left: anchor.right + GAP, from: 'right' },
-    { top: centerY, left: anchor.left - PAD_SIZE - GAP, from: 'left' },
+    { top: centerY, left: anchor.left - PAD_WIDTH - GAP, from: 'left' },
   ] as const
 
   const fits = candidates.find(
     (c) =>
       c.top >= GAP &&
-      c.top + PAD_SIZE <= vh - GAP &&
+      c.top + height <= vh - GAP &&
       c.left >= GAP &&
-      c.left + PAD_SIZE <= vw - GAP,
+      c.left + PAD_WIDTH <= vw - GAP,
   )
 
   return fits ?? { top: clampY(anchor.bottom + GAP), left: centerX, from: 'below' as const }
 }
 
 export const NumberPad = forwardRef<HTMLDivElement, Props>(function NumberPad(
-  { anchor, onPick },
+  { anchor, mode, notes, disabled, onPick, onClear },
   ref,
 ) {
-  const { top, left, from } = place(anchor)
+  const height = padHeight(mode)
+  const { top, left, from } = place(anchor, height)
+  const isNote = mode === 'note'
 
   return (
     <div
       ref={ref}
-      className={`pad pad--${from}`}
-      style={{ top, left, width: PAD_SIZE, height: PAD_SIZE }}
+      className={`pad pad--${from} pad--${mode}`}
+      style={{ top, left, width: PAD_WIDTH, height }}
       role="group"
-      aria-label="選擇數字"
+      aria-label={isNote ? '筆記數字' : '選擇數字'}
+      // 面板本身不該觸發格子的右鍵選單
+      onContextMenu={(event) => event.preventDefault()}
     >
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+      <div className="pad__keys">
+        {DIGITS.map((digit) => {
+          const blocked = isNote && disabled.has(digit)
+          return (
+            <button
+              key={digit}
+              type="button"
+              className={`pad__key${isNote && notes.has(digit) ? ' pad__key--active' : ''}`}
+              aria-disabled={blocked}
+              aria-pressed={isNote ? notes.has(digit) : undefined}
+              onClick={() => {
+                if (blocked) return
+                onPick(digit)
+              }}
+            >
+              {digit}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* FR-21.19、FR-21.20 */}
+      {isNote && (
         <button
-          key={digit}
           type="button"
-          className="pad__key"
-          onClick={() => onPick(digit)}
+          className="pad__clear"
+          aria-disabled={notes.size === 0}
+          onClick={() => {
+            if (notes.size === 0) return
+            onClear()
+          }}
         >
-          {digit}
+          clear
         </button>
-      ))}
+      )}
     </div>
   )
 })

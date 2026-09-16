@@ -1,8 +1,8 @@
 .pad {
   position: fixed;
   z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 4px;
   /* §9.5 */
@@ -11,6 +11,17 @@
   border-radius: 8px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
   animation: pad-in 120ms ease-out;
+}
+
+/* FR-22.1：筆記面板以琥珀色與答案面板區隔 */
+.pad--note {
+  border-color: var(--note);
+}
+
+.pad__keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
 /* FR-14.4：出現時淡入並朝展開方向輕微位移 */
@@ -51,16 +62,64 @@
     color 120ms ease;
 }
 
+.pad--note .pad__key {
+  color: var(--note);
+}
+
+/* 已記下的數字 */
+.pad--note .pad__key--active {
+  background: var(--surface-raised);
+}
+
+/* FR-21.6：關聯格已排除的數字淡化且不可點擊 */
+.pad--note .pad__key[aria-disabled='true'] {
+  color: var(--note-disabled);
+  cursor: not-allowed;
+}
+
 @media (hover: hover) {
-  .pad__key:hover {
+  .pad--answer .pad__key:hover {
     background: var(--surface-raised);
     color: var(--accent);
   }
+
+  .pad--note .pad__key:not([aria-disabled='true']):hover {
+    background: var(--surface-raised);
+    color: var(--note);
+  }
 }
 
-.pad__key:active {
+.pad--answer .pad__key:active {
   background: var(--surface-raised);
   color: var(--accent);
+}
+
+/* FR-22.6：橫跨三格寬的 clear 按鈕 */
+.pad__clear {
+  height: 44px;
+  border: 1px solid var(--note);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--note);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.pad__clear[aria-disabled='true'] {
+  border-color: var(--note-disabled);
+  color: var(--note-disabled);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .pad__clear:not([aria-disabled='true']):hover {
+    background: var(--surface-raised);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
