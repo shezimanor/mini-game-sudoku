@@ -1,0 +1,93 @@
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* FR-18.6：所有斷點維持單行左右分區 */
+  width: 100%;
+}
+
+.hud__left,
+.hud__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud__difficulty {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.hud__timer {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.hud__dots {
+  display: flex;
+  gap: 6px;
+}
+
+.hud__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background-color 200ms ease;
+}
+
+.hud__dot--used {
+  background: var(--danger);
+}
+
+.hud__dots--critical .hud__dot:not(.hud__dot--used) {
+  background: var(--danger);
+}
+
+.hud__pause {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.hud__pause-bar {
+  width: 3px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+.hud__pause:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .hud__pause:not(:disabled):hover {
+    border-color: var(--accent);
+  }
+
+  .hud__pause:not(:disabled):hover .hud__pause-bar {
+    background: var(--accent);
+  }
+}
+
+@media (width <= 480px) {
+  .hud__timer {
+    font-size: 16px;
+  }
+
+  .hud__difficulty {
+    font-size: 13px;
+  }
+}

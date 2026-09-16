@@ -1,0 +1,133 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  width: var(--board-size);
+  height: var(--board-size);
+  background: var(--surface);
+  /* FR-12.1 */
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  /* FR-18.3：字級隨格子縮放 */
+  font-size: calc(var(--cell-size) * 0.55);
+  line-height: 1;
+  /* FR-12.2：格線 1px，宮線 2px；border 畫在格子內側，格子寬度仍相等 */
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.cell:nth-child(9n) {
+  border-right: none;
+}
+
+.cell:nth-child(n + 73) {
+  border-bottom: none;
+}
+
+/* 第 3、6 欄右側為宮線 */
+.cell:nth-child(3n):not(:nth-child(9n)) {
+  border-right-width: 2px;
+  border-right-color: var(--border-strong);
+}
+
+/* 第 3、6 列底部為宮線 */
+.cell:nth-child(n + 19):nth-child(-n + 27),
+.cell:nth-child(n + 46):nth-child(-n + 54) {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--border-strong);
+}
+
+.cell--given {
+  font-weight: 600;
+}
+
+/* FR-12.3、FR-12.4：玩家填對的數字用強調色 + 極淡光暈，與題目數字區分 */
+.cell--filled {
+  font-weight: 500;
+  color: var(--accent);
+  text-shadow: 0 0 8px rgb(34 211 238 / 35%);
+}
+
+.cell[aria-disabled='true'] {
+  cursor: default;
+}
+
+/* FR-18.9：hover 只在有指標裝置上生效，避免觸控點擊後樣式殘留 */
+@media (hover: hover) {
+  .cell:not([aria-disabled='true']):hover {
+    background: var(--surface-raised);
+  }
+}
+
+.cell--selected {
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* FR-8.4：T=0 時先如同正常填入的數字呈現，0.3s 後才翻成紅色 X */
+.cell--error {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* FR-8.4：0.3s 後換成紅色 X，headShake 0.6s，接著淡出 0.3s */
+.cell--error-mark {
+  color: var(--danger);
+  font-weight: 600;
+  animation:
+    cell-shake 600ms ease-in-out,
+    cell-fade 300ms ease-out 600ms forwards;
+}
+
+@keyframes cell-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  12.5%,
+  37.5%,
+  62.5% {
+    transform: translateX(-4px) rotate(-2deg);
+  }
+  25%,
+  50%,
+  75% {
+    transform: translateX(4px) rotate(2deg);
+  }
+}
+
+@keyframes cell-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* §9.8 減少動態效果：不位移、不淡出，改以底色紅光傳達同樣的回饋 */
+@keyframes cell-flash {
+  0% {
+    background: rgb(244 63 94 / 15%);
+  }
+  100% {
+    background: var(--surface);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell--error-mark {
+    animation: cell-flash 900ms ease-out forwards;
+  }
+}

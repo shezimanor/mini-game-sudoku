@@ -1,0 +1,77 @@
+.pad {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px;
+  /* §9.5 */
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  animation: pad-in 120ms ease-out;
+}
+
+/* FR-14.4：出現時淡入並朝展開方向輕微位移 */
+@keyframes pad-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.pad--above {
+  animation-name: pad-in-above;
+}
+
+@keyframes pad-in-above {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.pad__key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* FR-18.4：固定 44px 觸控目標，不隨盤面縮放 */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 20px;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+@media (hover: hover) {
+  .pad__key:hover {
+    background: var(--surface-raised);
+    color: var(--accent);
+  }
+}
+
+.pad__key:active {
+  background: var(--surface-raised);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pad,
+  .pad--above {
+    animation-name: pad-fade;
+  }
+
+  @keyframes pad-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}

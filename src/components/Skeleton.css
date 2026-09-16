@@ -1,0 +1,64 @@
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: var(--board-size);
+  pointer-events: none;
+}
+
+.skeleton__hud {
+  display: flex;
+  justify-content: space-between;
+  height: 36px;
+}
+
+.skeleton__board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 1px;
+  width: var(--board-size);
+  height: var(--board-size);
+  padding: 2px;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+}
+
+.skeleton__block {
+  border-radius: 3px;
+  /* §9.7：shimmer 漸層橫掃 */
+  background: linear-gradient(
+      90deg,
+      var(--surface-raised) 25%,
+      #475569 50%,
+      var(--surface-raised) 75%
+    )
+    0 0 / 400% 100%;
+  animation: shimmer 1500ms linear infinite;
+}
+
+.skeleton__block--label {
+  width: 96px;
+  height: 20px;
+  align-self: center;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -400% 0;
+  }
+}
+
+/* FR-17.2：減少動態效果時改為整塊明暗脈動，不做橫向移動 */
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__block {
+    background: var(--surface-raised);
+    animation: skeleton-pulse 2000ms ease-in-out infinite;
+  }
+}
