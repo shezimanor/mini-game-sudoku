@@ -72,8 +72,13 @@
 }
 
 /* FR-18.9：hover 只在有指標裝置上生效，避免觸控點擊後樣式殘留 */
+/* FR-23.1 ~ FR-23.4：十字高亮，游標所在格子比同列同行更強一層 */
 @media (hover: hover) {
-  .cell:not([aria-disabled='true']):hover {
+  .cell--crossed {
+    background: var(--cross);
+  }
+
+  .cell--hovered {
     background: var(--surface-raised);
   }
 }

@@ -16,6 +16,8 @@
   --note: #fbbf24;
   --note-disabled: #57534e;
   --note-text: #a8a29e;
+  /* §9.11 十字高亮 */
+  --cross: rgb(255 255 255 / 5%);
   --overlay: rgb(15 23 42 / 72%);
 
   /* §9.2 字體 */

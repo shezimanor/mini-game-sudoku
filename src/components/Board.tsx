@@ -1,6 +1,6 @@
 /** 9×9 盤面（§7.4、§7.9、§9.3、§9.10） */
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import './Board.css'
 
 export interface ErrorMark {
@@ -38,6 +38,9 @@ export function Board({
   const pressOrigin = useRef<{ x: number; y: number } | null>(null)
   const longPressed = useRef(false)
 
+  /** FR-23.1：游標所在的格子，用來高亮整列與整行 */
+  const [hovered, setHovered] = useState<number | null>(null)
+
   const cancelPress = () => {
     window.clearTimeout(pressTimer.current)
     pressTimer.current = undefined
@@ -45,7 +48,12 @@ export function Board({
   }
 
   return (
-    <div className="board" role="grid" aria-label="數獨盤面">
+    <div
+      className="board"
+      role="grid"
+      aria-label="數獨盤面"
+      onPointerLeave={() => setHovered(null)}
+    >
       {board.map((value, index) => {
         const given = puzzle[index] !== 0
         const filled = !given && value !== 0
@@ -54,7 +62,15 @@ export function Board({
         const showError = error?.index === index
         const cellNotes = notes[index]
 
+        // FR-23.5：只看同列與同行，不含同宮
+        const crossed =
+          hovered !== null &&
+          hovered !== index &&
+          (Math.floor(hovered / 9) === Math.floor(index / 9) || hovered % 9 === index % 9)
+
         const classes = ['cell']
+        if (crossed) classes.push('cell--crossed')
+        if (hovered === index) classes.push('cell--hovered')
         if (given) classes.push('cell--given')
         if (filled) classes.push('cell--filled')
         if (selected === index) classes.push('cell--selected')
@@ -107,6 +123,11 @@ export function Board({
             }}
             onPointerUp={cancelPress}
             onPointerCancel={cancelPress}
+            // FR-23.2：只有指標裝置才有 hover，觸控不套用
+            onPointerEnter={(event) => {
+              if (event.pointerType !== 'mouse') return
+              setHovered(index)
+            }}
           >
             {showError ? (
               // FR-8.8：錯誤動畫期間隱藏筆記，避免與紅色 X 互相干擾
