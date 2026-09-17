@@ -70,3 +70,7 @@ src/
 ## 開發方式
 
 本專案由 [Claude Code](https://claude.com/claude-code) 協助開發。開發流程是先與 Claude 對話釐清需求、逐步累積成規格書，再依規格書實作——`docs/SPEC.md` 的變更紀錄完整保留了這個過程。
+
+## 授權
+
+[MIT](LICENSE)
