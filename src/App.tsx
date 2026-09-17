@@ -211,8 +211,10 @@ export default function App() {
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       if (padRef.current?.contains(target)) return
-      // 點到其他格子時交給格子自己處理（切換或關閉）
-      if (target.closest('.cell')) return
+      // 點到可選取的格子時交給格子自己處理（切換面板）；
+      // 鎖定格不會有任何動作，視同點在面板外，這裡直接關閉（FR-7.4.2）
+      const cell = target.closest('.cell')
+      if (cell && cell.getAttribute('aria-disabled') !== 'true') return
       closePad()
     }
 
@@ -279,7 +281,7 @@ export default function App() {
             difficulty={difficulty}
             elapsed={elapsed}
             mistakes={mistakes}
-            canPause={status === 'playing'}
+            canPause={status === 'playing' && !error}
             onPause={() => {
               // FR-6.2：暫停時一併關閉數字面板
               closePad()

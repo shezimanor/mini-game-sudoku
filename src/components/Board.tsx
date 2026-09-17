@@ -1,6 +1,6 @@
 /** 9×9 盤面（§7.4、§7.9、§9.3、§9.10） */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './Board.css'
 
 export interface ErrorMark {
@@ -46,6 +46,17 @@ export function Board({
     pressTimer.current = undefined
     pressOrigin.current = null
   }
+
+  /** 長按倒數期間盤面可能失去互動（暫停、完成、失敗），callback 需要即時的值 */
+  const interactiveRef = useRef(interactive)
+
+  // 盤面停止互動或元件卸載時，未觸發的長按計時器必須一併清掉，
+  // 否則 callback 會用舊的 render 值開出一個不該存在的筆記面板
+  useEffect(() => {
+    interactiveRef.current = interactive
+    if (!interactive) cancelPress()
+    return cancelPress
+  }, [interactive])
 
   return (
     <div
@@ -108,8 +119,9 @@ export function Board({
               longPressed.current = false
               pressOrigin.current = { x: event.clientX, y: event.clientY }
               pressTimer.current = window.setTimeout(() => {
-                longPressed.current = true
                 cancelPress()
+                if (!interactiveRef.current) return
+                longPressed.current = true
                 openNotePad(element)
               }, 500)
             }}
