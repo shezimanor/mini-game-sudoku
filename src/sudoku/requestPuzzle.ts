@@ -8,18 +8,21 @@ import type { Difficulty, GeneratedPuzzle } from './logic'
 import type { GenerateResponse } from './generator.worker'
 
 /** skeleton 最短顯示時間，避免產題過快造成閃爍（FR-2.6、FR-19.8） */
-const MIN_SKELETON_MS = 600
+export const MIN_SKELETON_MS = 600
 /** 單次產題逾時門檻（FR-19.7） */
-const TIMEOUT_MS = 10_000
+export const TIMEOUT_MS = 10_000
 /** 連續失敗幾次後放棄（FR-19.7） */
-const MAX_ATTEMPTS = 3
+export const MAX_ATTEMPTS = 3
 
 export interface PuzzleRequest {
   /** 取消這次產題並終止 Worker（FR-19.5） */
   cancel(): void
 }
 
-function createWorker(): Worker | null {
+/** 回傳 null 代表這個環境沒有 Worker，改走主執行緒（FR-19.6） */
+export type WorkerFactory = () => Worker | null
+
+const defaultWorkerFactory: WorkerFactory = () => {
   if (typeof Worker === 'undefined') return null
   try {
     return new Worker(new URL('./generator.worker.ts', import.meta.url), {
@@ -34,6 +37,7 @@ export function requestPuzzle(
   difficulty: Difficulty,
   onDone: (result: GeneratedPuzzle) => void,
   onError: (message: string) => void,
+  createWorker: WorkerFactory = defaultWorkerFactory,
 ): PuzzleRequest {
   const startedAt = performance.now()
   let cancelled = false
@@ -49,7 +53,7 @@ export function requestPuzzle(
       onDone(result)
       return
     }
-    delayId = window.setTimeout(() => {
+    delayId = setTimeout(() => {
       if (!cancelled) onDone(result)
     }, remaining)
   }
@@ -57,7 +61,7 @@ export function requestPuzzle(
   const disposeWorker = () => {
     worker?.terminate()
     worker = null
-    window.clearTimeout(timeoutId)
+    clearTimeout(timeoutId)
   }
 
   const fail = (message: string) => {
@@ -84,7 +88,7 @@ export function requestPuzzle(
       return
     }
 
-    timeoutId = window.setTimeout(() => fail('產題逾時'), TIMEOUT_MS)
+    timeoutId = setTimeout(() => fail('產題逾時'), TIMEOUT_MS)
 
     worker.onmessage = (event: MessageEvent<GenerateResponse>) => {
       if (cancelled) return
@@ -111,7 +115,7 @@ export function requestPuzzle(
     cancel() {
       cancelled = true
       disposeWorker()
-      window.clearTimeout(delayId)
+      clearTimeout(delayId)
     },
   }
 }
