@@ -5,7 +5,11 @@
 
 const CACHE: number[][] = []
 
-export function peerIndices(index: number): number[] {
+/**
+ * 回傳的是快取中的同一個陣列，因此型別標為 readonly：
+ * 呼叫端若對它 sort 或 push，會永久污染快取，症狀還會出現在無關的地方。
+ */
+export function peerIndices(index: number): readonly number[] {
   const cached = CACHE[index]
   if (cached) return cached
 

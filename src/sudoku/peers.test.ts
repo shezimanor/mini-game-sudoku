@@ -139,5 +139,26 @@ describe('peerIndices', () => {
       expect(a).not.toEqual(b)
       expect(peerIndices(0)).toEqual(a)
     })
+
+    it('型別上擋掉會污染快取的就地改動', () => {
+      // 只用來做編譯期檢查，刻意不執行：真的呼叫就會弄壞快取。
+      // 若回傳型別改回可變的 number[]，@ts-expect-error 會變成多餘而讓 tsc 失敗。
+      const mutate = (peers: ReturnType<typeof peerIndices>) => {
+        // @ts-expect-error readonly 陣列不得就地排序
+        peers.sort()
+        // @ts-expect-error readonly 陣列不得新增元素
+        peers.push(0)
+      }
+      expect(mutate).toBeTypeOf('function')
+    })
+
+    it('呼叫端先複製再改動不會影響快取', () => {
+      const before = [...peerIndices(40)]
+      const copy = [...peerIndices(40)]
+      copy.sort((a, b) => b - a)
+      copy.push(999)
+      expect([...peerIndices(40)]).toEqual(before)
+      expect(peerIndices(40)).toHaveLength(20)
+    })
   })
 })
