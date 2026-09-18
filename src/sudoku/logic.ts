@@ -42,7 +42,7 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /** 檢查在 index 填入 digit 是否違反列、行、宮的規則（FR-3.5） */
-function isValid(board: number[], index: number, digit: number): boolean {
+export function isValid(board: number[], index: number, digit: number): boolean {
   const row = Math.floor(index / 9)
   const col = index % 9
   const boxRow = Math.floor(row / 3) * 3
@@ -59,7 +59,7 @@ function isValid(board: number[], index: number, digit: number): boolean {
 }
 
 /** 以回溯法 + 隨機候選順序填滿盤面，產生一份完整正解 */
-function fillBoard(board: number[], pos = 0): boolean {
+export function fillBoard(board: number[], pos = 0): boolean {
   if (pos === 81) return true
   if (board[pos] !== 0) return fillBoard(board, pos + 1)
 
@@ -77,7 +77,7 @@ function fillBoard(board: number[], pos = 0): boolean {
  * 只需要區分「唯一解」與「多解」，所以 limit 固定為 2 即可。
  * 過程中會暫時改動 board，但結束時一定還原。
  */
-function countSolutions(board: number[], limit = 2): number {
+export function countSolutions(board: number[], limit = 2): number {
   const index = board.indexOf(0)
   if (index === -1) return 1
 
