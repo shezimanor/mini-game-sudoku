@@ -71,19 +71,13 @@
   background: var(--surface-raised);
 }
 
-/* FR-21.6：關聯格已排除的數字淡化且不可點擊 */
-.pad--note .pad__key[aria-disabled='true'] {
-  color: var(--note-disabled);
-  cursor: not-allowed;
-}
-
 @media (hover: hover) {
   .pad--answer .pad__key:hover {
     background: var(--surface-raised);
     color: var(--accent);
   }
 
-  .pad--note .pad__key:not([aria-disabled='true']):hover {
+  .pad--note .pad__key:hover {
     background: var(--surface-raised);
     color: var(--note);
   }

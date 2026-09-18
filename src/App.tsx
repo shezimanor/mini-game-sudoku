@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DIFFICULTY_LABEL } from './sudoku/logic'
 import type { Difficulty } from './sudoku/logic'
-import { peerIndices, usedDigits } from './sudoku/peers'
+import { peerIndices } from './sudoku/peers'
 import { requestPuzzle } from './sudoku/requestPuzzle'
 import type { PuzzleRequest } from './sudoku/requestPuzzle'
 import { formatTime, useTimer } from './hooks/useTimer'
@@ -197,11 +197,9 @@ export default function App() {
         fill(digit)
         return
       }
-      // FR-21.11：被關聯格排除的數字按下去無作用
-      if (usedDigits(board, pad.index).has(digit)) return
       toggleNote(pad.index, digit)
     },
-    [board, fill, pad, toggleNote],
+    [fill, pad, toggleNote],
   )
 
   /** FR-7.4.2：點擊目標空格與面板以外的地方就關閉面板 */
@@ -313,7 +311,6 @@ export default function App() {
           anchor={pad.rect}
           mode={pad.mode}
           notes={notes[pad.index]}
-          disabled={usedDigits(board, pad.index)}
           onPick={handlePick}
           onClear={() => clearNotes(pad.index)}
         />

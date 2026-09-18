@@ -1,6 +1,6 @@
 /**
  * 關聯格（peers）：與某格同列、同行、同宮的 20 格。
- * 用於筆記面板的可用數字判定（FR-21.6）與確定答案後的筆記清除（FR-21.15）。
+ * 用於確定答案後的筆記清除（FR-21.15）。
  */
 
 const CACHE: number[][] = []
@@ -27,15 +27,3 @@ export function peerIndices(index: number): number[] {
   return result
 }
 
-/**
- * 該格關聯格中已確定的數字。
- * board 只會有初始題目與玩家填對的數字，填錯的不會留下，
- * 所以直接讀 board 就是 FR-21.7 說的「目前已確定的數字」。
- */
-export function usedDigits(board: number[], index: number): Set<number> {
-  const used = new Set<number>()
-  for (const peer of peerIndices(index)) {
-    if (board[peer] !== 0) used.add(board[peer])
-  }
-  return used
-}

@@ -24,8 +24,6 @@ interface Props {
   mode: PadMode
   /** 筆記模式：該格目前已記下的數字 */
   notes: Set<number>
-  /** 筆記模式：關聯格已排除、不可點擊的數字（FR-21.6） */
-  disabled: Set<number>
   onPick: (digit: number) => void
   onClear: () => void
 }
@@ -60,7 +58,7 @@ function place(anchor: DOMRect, height: number) {
 }
 
 export const NumberPad = forwardRef<HTMLDivElement, Props>(function NumberPad(
-  { anchor, mode, notes, disabled, onPick, onClear },
+  { anchor, mode, notes, onPick, onClear },
   ref,
 ) {
   const height = padHeight(mode)
@@ -77,25 +75,19 @@ export const NumberPad = forwardRef<HTMLDivElement, Props>(function NumberPad(
       // 面板本身不該觸發格子的右鍵選單
       onContextMenu={(event) => event.preventDefault()}
     >
+      {/* FR-21.6：1–9 全部可點，系統不替玩家排除任何候選數字 */}
       <div className="pad__keys">
-        {DIGITS.map((digit) => {
-          const blocked = isNote && disabled.has(digit)
-          return (
-            <button
-              key={digit}
-              type="button"
-              className={`pad__key${isNote && notes.has(digit) ? ' pad__key--active' : ''}`}
-              aria-disabled={blocked}
-              aria-pressed={isNote ? notes.has(digit) : undefined}
-              onClick={() => {
-                if (blocked) return
-                onPick(digit)
-              }}
-            >
-              {digit}
-            </button>
-          )
-        })}
+        {DIGITS.map((digit) => (
+          <button
+            key={digit}
+            type="button"
+            className={`pad__key${isNote && notes.has(digit) ? ' pad__key--active' : ''}`}
+            aria-pressed={isNote ? notes.has(digit) : undefined}
+            onClick={() => onPick(digit)}
+          >
+            {digit}
+          </button>
+        ))}
       </div>
 
       {/* FR-21.19、FR-21.20 */}
